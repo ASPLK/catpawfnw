@@ -1,6 +1,29 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+const rawPort = process.env.PORT;
+if (typeof rawPort === "string" && rawPort.length) {
+  const numeric = Number(rawPort);
+  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 65535) {
+    if (rawPort.startsWith("$")) {
+      const envKey = rawPort.slice(1);
+      const envValue = process.env[envKey];
+      const envNumeric = Number(envValue);
+      if (
+        Number.isFinite(envNumeric) &&
+        envNumeric >= 0 &&
+        envNumeric <= 65535
+      ) {
+        process.env.PORT = String(envNumeric);
+      } else {
+        process.env.PORT = "10000";
+      }
+    } else {
+      process.env.PORT = "10000";
+    }
+  }
+}
+
 const configModule = require("./index.config.js");
 const baseConfig = configModule?.default || configModule;
 
