@@ -1,28 +1,34 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const rawPort = process.env.PORT;
-if (typeof rawPort === "string" && rawPort.length) {
-  const numeric = Number(rawPort);
-  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 65535) {
-    if (rawPort.startsWith("$")) {
-      const envKey = rawPort.slice(1);
-      const envValue = process.env[envKey];
-      const envNumeric = Number(envValue);
-      if (
-        Number.isFinite(envNumeric) &&
-        envNumeric >= 0 &&
-        envNumeric <= 65535
-      ) {
-        process.env.PORT = String(envNumeric);
-      } else {
-        process.env.PORT = "10000";
-      }
-    } else {
-      process.env.PORT = "10000";
+const DEFAULT_PORT = "10000";
+const normalizePortEnv = (key, fallback) => {
+  const raw = process.env[key];
+  if (typeof raw !== "string" || !raw.length) {
+    if (fallback) process.env[key] = String(fallback);
+    return;
+  }
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric) && numeric >= 0 && numeric <= 65535) {
+    process.env[key] = String(numeric);
+    return;
+  }
+  if (raw.startsWith("$")) {
+    const envKey = raw.slice(1);
+    const envValue = process.env[envKey];
+    const envNumeric = Number(envValue);
+    if (Number.isFinite(envNumeric) && envNumeric >= 0 && envNumeric <= 65535) {
+      process.env[key] = String(envNumeric);
+      return;
     }
   }
-}
+  if (fallback) {
+    process.env[key] = String(fallback);
+  }
+};
+
+normalizePortEnv("PORT", DEFAULT_PORT);
+normalizePortEnv("DEV_HTTP_PORT", process.env.PORT || DEFAULT_PORT);
 
 const configModule = require("./index.config.js");
 const baseConfig = configModule?.default || configModule;
