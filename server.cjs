@@ -30,6 +30,16 @@ const normalizePortEnv = (key, fallback) => {
 normalizePortEnv("PORT", DEFAULT_PORT);
 normalizePortEnv("DEV_HTTP_PORT", process.env.PORT || DEFAULT_PORT);
 
+
+const profileJson = process.env.CATPAW_PROFILE_JSON;
+if (profileJson) {
+  try {
+    process.env.CATPAW_PROFILE_JSON = profileJson;
+  } catch (err) {
+    console.warn("Failed to read CATPAW_PROFILE_JSON:", err?.message || err);
+  }
+}
+
 const configModule = require("./index.config.js");
 const baseConfig = configModule?.default || configModule;
 
