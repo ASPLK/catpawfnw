@@ -6,8 +6,10 @@ const util = require("node:util");
 const MAX_LOG_CHARS = 2000;
 const MAX_LOG_ITEMS = 20;
 
-const summarizeValue = (value) => {
+const summarizeValue = (value, depth = 0, seen = new WeakSet()) => {
   if (value == null) return value;
+  if (depth > 5) return "... (max depth reached)";
+
   if (Buffer.isBuffer(value)) {
     return `<Buffer len=${value.length}>`;
   }
@@ -23,13 +25,20 @@ const summarizeValue = (value) => {
       : value;
   }
   if (Array.isArray(value)) {
-    const head = value.slice(0, MAX_LOG_ITEMS).map(summarizeValue);
+    const head = value.slice(0, MAX_LOG_ITEMS).map((v) => summarizeValue(v, depth + 1, seen));
     return value.length > MAX_LOG_ITEMS ? [...head, `...(${value.length} items)`] : head;
   }
   if (typeof value === "object") {
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
+
     const out = {};
-    for (const [key, val] of Object.entries(value)) {
-      out[key] = summarizeValue(val);
+    const entries = Object.entries(value);
+    for (const [key, val] of entries.slice(0, MAX_LOG_ITEMS)) {
+      out[key] = summarizeValue(val, depth + 1, seen);
+    }
+    if (entries.length > MAX_LOG_ITEMS) {
+      out._extraFields = entries.length - MAX_LOG_ITEMS;
     }
     return out;
   }
