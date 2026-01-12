@@ -71,10 +71,10 @@ console.error = (...args) => {
 const isAuthError = (err) =>
   Boolean(
     err &&
-      (err.status === 401 ||
-        err.statusCode === 401 ||
-        err.code === 31001 ||
-        (err.response && err.response.status === 401)),
+    (err.status === 401 ||
+      err.statusCode === 401 ||
+      err.code === 31001 ||
+      (err.response && err.response.status === 401)),
   );
 
 process.on("unhandledRejection", (reason) => {
@@ -144,6 +144,25 @@ try {
 }
 
 const config = { ...baseConfig };
+
+// Inject environment variables into config
+if (process.env.ALI_TOKEN) {
+  config.ali = config.ali || {};
+  config.ali.token = process.env.ALI_TOKEN;
+}
+if (process.env.QUARK_COOKIE) {
+  config.quark = config.quark || {};
+  config.quark.cookie = process.env.QUARK_COOKIE;
+}
+if (process.env.UC_COOKIE) {
+  config.uc = config.uc || {};
+  config.uc.cookie = process.env.UC_COOKIE;
+}
+if (process.env.BAIDU_COOKIE) {
+  config.baidu = config.baidu || {};
+  config.baidu.cookie = process.env.BAIDU_COOKIE;
+}
+
 config.sites = config.sites || {};
 if (!Array.isArray(config.sites.list)) config.sites.list = [];
 if (sites.length) config.sites.list = sites;
