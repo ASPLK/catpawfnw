@@ -1,6 +1,97 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+const util = require("node:util");
+
+const MAX_LOG_CHARS = 2000;
+const MAX_LOG_ITEMS = 20;
+
+const summarizeValue = (value) => {
+  if (value == null) return value;
+  if (Buffer.isBuffer(value)) {
+    return `<Buffer len=${value.length}>`;
+  }
+  if (ArrayBuffer.isView(value)) {
+    return `<${value.constructor?.name || "TypedArray"} len=${value.byteLength}>`;
+  }
+  if (value instanceof ArrayBuffer) {
+    return `<ArrayBuffer len=${value.byteLength}>`;
+  }
+  if (typeof value === "string") {
+    return value.length > MAX_LOG_CHARS
+      ? value.slice(0, MAX_LOG_CHARS) + "..."
+      : value;
+  }
+  if (Array.isArray(value)) {
+    const head = value.slice(0, MAX_LOG_ITEMS).map(summarizeValue);
+    return value.length > MAX_LOG_ITEMS ? [...head, `...(${value.length} items)`] : head;
+  }
+  if (typeof value === "object") {
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      out[key] = summarizeValue(val);
+    }
+    return out;
+  }
+  return value;
+};
+
+const sanitizeError = (err) => {
+  if (!err || typeof err !== "object") return summarizeValue(err);
+  const out = {
+    name: err.name,
+    message: err.message,
+  };
+  if (err.code) out.code = err.code;
+  if (err.status) out.status = err.status;
+  if (err.statusCode) out.statusCode = err.statusCode;
+  if (err.response) {
+    out.response = {
+      status: err.response.status,
+      data: summarizeValue(err.response.data),
+      headers: summarizeValue(err.response.headers),
+    };
+  }
+  if (err.config) {
+    out.config = {
+      url: err.config.url,
+      method: err.config.method,
+      timeout: err.config.timeout,
+    };
+  }
+  return out;
+};
+
+const originalError = console.error.bind(console);
+console.error = (...args) => {
+  const safeArgs = args.map((arg) => (arg instanceof Error ? sanitizeError(arg) : summarizeValue(arg)));
+  originalError(...safeArgs);
+};
+
+const isAuthError = (err) =>
+  Boolean(
+    err &&
+      (err.status === 401 ||
+        err.statusCode === 401 ||
+        err.code === 31001 ||
+        (err.response && err.response.status === 401)),
+  );
+
+process.on("unhandledRejection", (reason) => {
+  if (isAuthError(reason)) {
+    console.error({ message: "Unauthorized request skipped", status: 401 });
+    return;
+  }
+  console.error(reason);
+});
+
+process.on("uncaughtException", (err) => {
+  if (isAuthError(err)) {
+    console.error({ message: "Unauthorized exception skipped", status: 401 });
+    return;
+  }
+  console.error(err);
+});
 const DEFAULT_PORT = "10000";
 const normalizePortEnv = (key, fallback) => {
   const raw = process.env[key];
