@@ -1,0 +1,44 @@
+name: Sync from upstream
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [sync-upstream]
+  schedule:
+    - cron: "0 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream
+        env:
+          UPSTREAM_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
+        run: |
+          if [ -n "$UPSTREAM_TOKEN" ]; then
+            git remote add upstream "https://x-access-token:${UPSTREAM_TOKEN}@github.com/sperwe/wexfnw.git"
+          else
+            git remote add upstream "https://github.com/sperwe/wexfnw.git"
+          fi
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Merge upstream
+        run: git merge --no-edit upstream/main
+
+      - name: Push
+        run: git push origin HEAD:main
