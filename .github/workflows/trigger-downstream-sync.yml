@@ -1,0 +1,19 @@
+name: Trigger downstream sync
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger downstream sync
+        env:
+          DOWNSTREAM_TOKEN: ${{ secrets.DOWNSTREAM_TOKEN }}
+        run: |
+          curl -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${DOWNSTREAM_TOKEN}" \
+            https://api.github.com/repos/ASPLK/catpawfnw/dispatches \
+            -d '{"event_type":"sync-upstream"}'
