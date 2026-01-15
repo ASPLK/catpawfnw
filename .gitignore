@@ -2,3 +2,5 @@
 .github/workflows/keepalive.yml
 排查直链.md
 index初始版.js
+.env.local
+.quark-cookie.local
