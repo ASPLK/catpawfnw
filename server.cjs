@@ -3,6 +3,24 @@ const path = require("node:path");
 
 const util = require("node:util");
 
+const loadEnvFile = (envPath) => {
+  if (!fs.existsSync(envPath)) return;
+  const raw = fs.readFileSync(envPath, "utf8");
+  const lines = raw.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex == -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1);
+    if (!key) continue;
+    if (process.env[key] == null) {
+      process.env[key] = value;
+    }
+  }
+};
+
 const MAX_LOG_CHARS = 2000;
 const MAX_LOG_ITEMS = 20;
 
@@ -101,6 +119,8 @@ process.on("uncaughtException", (err) => {
   }
   console.error(err);
 });
+loadEnvFile(path.join(__dirname, ".env.local"));
+
 const DEFAULT_PORT = "10000";
 const normalizePortEnv = (key, fallback) => {
   const raw = process.env[key];
