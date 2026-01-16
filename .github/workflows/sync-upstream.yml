@@ -36,8 +36,8 @@ jobs:
           fi
 
           git remote remove upstream 2>/dev/null || true
-          # 使用 oauth2 作为用户名，适配各种类型的 Token
-          git remote add upstream "https://oauth2:${MY_TOKEN}@github.com/sperwe/catpaw.git"
+          # 使用 x-access-token 格式，这是最通用的 PAT 使用方式
+          git remote add upstream "https://x-access-token:${MY_TOKEN}@github.com/sperwe/catpaw.git"
           
           # 确保切到 main 分支
           git checkout main || git checkout -b main
