@@ -1,4 +1,4 @@
-Patch list for custom changes (wexfnw)
+Patch list for custom changes (catpaw)
 
 Purpose
 - These are the local customizations that should be reapplied after syncing upstream
