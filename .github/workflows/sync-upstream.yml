@@ -25,28 +25,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Add upstream and fetch
+      - name: Sync logic
         env:
           MY_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
         run: |
-          # 验证 Token 长度，不打印内容（正常应为 93 字符左右）
-          echo "Checking token availability..."
-          if [ -z "$MY_TOKEN" ]; then
-            echo "Error: UPSTREAM_TOKEN is empty!"
-            exit 1
-          fi
-          echo "Token length: ${#MY_TOKEN}"
+          # 显式使用 sperwe 身份和 Token
+          git remote add upstream "https://sperwe:${MY_TOKEN}@github.com/sperwe/catpaw.git"
           
-          # 使用最稳妥的带 Token 鉴权方式
-          git remote add upstream "https://${MY_TOKEN}@github.com/sperwe/catpaw.git"
-          git remote -v
+          # 尝试同步
+          git fetch upstream main
+          git merge --no-edit upstream/main || git merge --no-edit upstream/main --allow-unrelated-histories
           
-          # 尝试拉取
-          git fetch --no-tags --prune --verbose upstream main
-
-      - name: Merge upstream
-        run: |
-          git merge --no-edit upstream/main || (echo "Merge failed, trying to handle unrelated histories..." && git merge --no-edit upstream/main --allow-unrelated-histories)
-
-      - name: Push
-        run: git push origin HEAD:main
+          # 推送回 ASPLK 仓库
+          git push origin HEAD:main
