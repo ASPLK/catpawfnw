@@ -29,12 +29,15 @@ jobs:
         env:
           MY_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
         run: |
-          # 显式使用 sperwe 身份和 Token
+          git remote remove upstream 2>/dev/null || true
           git remote add upstream "https://sperwe:${MY_TOKEN}@github.com/sperwe/catpaw.git"
           
+          # 确保切到 main 分支
+          git checkout main || git checkout -b main
+
           # 尝试同步
           git fetch upstream main
           git merge --no-edit upstream/main || git merge --no-edit upstream/main --allow-unrelated-histories
           
           # 推送回 ASPLK 仓库
-          git push origin HEAD:main
+          git push origin main
