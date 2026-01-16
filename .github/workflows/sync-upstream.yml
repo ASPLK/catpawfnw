@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   sync:
-    if: github.repository == 'ASPLK/catpawfnw'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,26 +24,21 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Sync logic
+      - name: Add upstream
         env:
-          MY_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
+          UPSTREAM_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
         run: |
-          # 检查 Token 是否存在 (调试用)
-          if [ -z "$MY_TOKEN" ]; then
-            echo "Error: UPSTREAM_TOKEN is empty. Please check your GitHub Secrets."
-            exit 1
+          if [ -n "$UPSTREAM_TOKEN" ]; then
+            git remote add upstream "https://x-access-token:${UPSTREAM_TOKEN}@github.com/sperwe/catpaw.git"
+          else
+            git remote add upstream "https://github.com/sperwe/catpaw.git"
           fi
 
-          git remote remove upstream 2>/dev/null || true
-          # 使用 x-access-token 格式，这是最通用的 PAT 使用方式
-          git remote add upstream "https://x-access-token:${MY_TOKEN}@github.com/sperwe/catpaw.git"
-          
-          # 确保切到 main 分支
-          git checkout main || git checkout -b main
+      - name: Fetch upstream
+        run: git fetch upstream main
 
-          # 尝试同步
-          git fetch upstream main
-          git merge --no-edit upstream/main || git merge --no-edit upstream/main --allow-unrelated-histories
-          
-          # 推送回 ASPLK 仓库
-          git push origin main
+      - name: Merge upstream
+        run: git merge --no-edit upstream/main
+
+      - name: Push
+        run: git push origin HEAD:main
