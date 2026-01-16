@@ -29,8 +29,15 @@ jobs:
         env:
           MY_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
         run: |
+          # 检查 Token 是否存在 (调试用)
+          if [ -z "$MY_TOKEN" ]; then
+            echo "Error: UPSTREAM_TOKEN is empty. Please check your GitHub Secrets."
+            exit 1
+          fi
+
           git remote remove upstream 2>/dev/null || true
-          git remote add upstream "https://sperwe:${MY_TOKEN}@github.com/sperwe/catpaw.git"
+          # 使用 oauth2 作为用户名，适配各种类型的 Token
+          git remote add upstream "https://oauth2:${MY_TOKEN}@github.com/sperwe/catpaw.git"
           
           # 确保切到 main 分支
           git checkout main || git checkout -b main
