@@ -4,3 +4,9 @@
 index初始版.js
 .env.local
 .quark-cookie.local
+quark_flow_readable.js
+index.js.bak
+scripts/set-quark-cookie.sh
+scripts/run-with-quark-cookie-local.sh
+scripts/run-with-env-local.sh
+scripts/run-with-cookie.sh

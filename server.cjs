@@ -43,8 +43,12 @@ const summarizeValue = (value, depth = 0, seen = new WeakSet()) => {
       : value;
   }
   if (Array.isArray(value)) {
-    const head = value.slice(0, MAX_LOG_ITEMS).map((v) => summarizeValue(v, depth + 1, seen));
-    return value.length > MAX_LOG_ITEMS ? [...head, `...(${value.length} items)`] : head;
+    const head = value
+      .slice(0, MAX_LOG_ITEMS)
+      .map((v) => summarizeValue(v, depth + 1, seen));
+    return value.length > MAX_LOG_ITEMS
+      ? [...head, `...(${value.length} items)`]
+      : head;
   }
   if (typeof value === "object") {
     if (seen.has(value)) return "[Circular]";
@@ -91,17 +95,19 @@ const sanitizeError = (err) => {
 
 const originalError = console.error.bind(console);
 console.error = (...args) => {
-  const safeArgs = args.map((arg) => (arg instanceof Error ? sanitizeError(arg) : summarizeValue(arg)));
+  const safeArgs = args.map((arg) =>
+    arg instanceof Error ? sanitizeError(arg) : summarizeValue(arg),
+  );
   originalError(...safeArgs);
 };
 
 const isAuthError = (err) =>
   Boolean(
     err &&
-    (err.status === 401 ||
-      err.statusCode === 401 ||
-      err.code === 31001 ||
-      (err.response && err.response.status === 401)),
+      (err.status === 401 ||
+        err.statusCode === 401 ||
+        err.code === 31001 ||
+        (err.response && err.response.status === 401)),
   );
 
 process.on("unhandledRejection", (reason) => {
@@ -120,6 +126,42 @@ process.on("uncaughtException", (err) => {
   console.error(err);
 });
 loadEnvFile(path.join(__dirname, ".env.local"));
+
+const crypto = require("node:crypto");
+const hashCookie = (value) =>
+  crypto.createHash("sha256").update(value).digest("hex");
+const normalizeB64 = (value) => {
+  let normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = normalized.length % 4;
+  if (pad) normalized += "=".repeat(4 - pad);
+  return normalized;
+};
+const decodeB64 = (value) => {
+  try {
+    return Buffer.from(normalizeB64(value), "base64").toString();
+  } catch {
+    return null;
+  }
+};
+const logCookieFingerprint = (label, value) => {
+  if (!value) return;
+  console.log(
+    `[Cookie Debug] ${label}: len=${value.length}, sha256=${hashCookie(value)}`,
+  );
+};
+
+if (process.env.CATPAW_QUARK_COOKIE_B64) {
+  const decoded = decodeB64(process.env.CATPAW_QUARK_COOKIE_B64);
+  if (decoded) {
+    logCookieFingerprint("CATPAW_QUARK_COOKIE_B64 decoded", decoded);
+  } else {
+    console.warn("[Cookie Debug] CATPAW_QUARK_COOKIE_B64 decode failed");
+  }
+}
+if (process.env.QUARK_COOKIE) {
+  logCookieFingerprint("QUARK_COOKIE", process.env.QUARK_COOKIE);
+}
+
 
 const DEFAULT_PORT = "10000";
 const normalizePortEnv = (key, fallback) => {
@@ -149,7 +191,6 @@ const normalizePortEnv = (key, fallback) => {
 
 normalizePortEnv("PORT", DEFAULT_PORT);
 normalizePortEnv("DEV_HTTP_PORT", process.env.PORT || DEFAULT_PORT);
-
 
 const profileJson = process.env.CATPAW_PROFILE_JSON;
 if (profileJson) {
