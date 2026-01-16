@@ -29,11 +29,8 @@ jobs:
         env:
           UPSTREAM_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
         run: |
-          if [ -n "$UPSTREAM_TOKEN" ]; then
-            git remote add upstream "https://x-access-token:${UPSTREAM_TOKEN}@github.com/sperwe/catpaw.git"
-          else
-            git remote add upstream "https://github.com/sperwe/catpaw.git"
-          fi
+          git remote add upstream "https://${UPSTREAM_TOKEN}@github.com/sperwe/catpaw.git"
+          git remote -v
 
       - name: Fetch upstream
         run: git fetch upstream main
